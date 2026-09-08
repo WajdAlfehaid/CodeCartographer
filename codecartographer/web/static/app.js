@@ -59,6 +59,18 @@
 
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
+  function shortRoot(path) {
+    // Last two path segments, minus any repetition. CI checkouts land in
+    // paths like /home/runner/work/Project/Project, and "Project/Project"
+    // is a silly thing to put at the top of a report.
+    var parts = String(path || "").replace(/\\/g, "/").split("/")
+      .filter(function (part) { return part.length; });
+    var tail = parts.slice(-2).filter(function (part, i, all) {
+      return i === 0 || part !== all[i - 1];
+    });
+    return tail.join("/") || "codebase";
+  }
+
   // ------------------------------------------------------------- sections
 
   function statCard(key, value, note) {
@@ -81,7 +93,7 @@
       .map(function (l) { return o.languages[l].label; }).join(", ");
     if (langs.length > 4) langText += " +" + (langs.length - 4) + " more";
 
-    host.appendChild(el("h1", { text: o.root.split("/").slice(-2).join("/") }));
+    host.appendChild(el("h1", { text: shortRoot(o.root) }));
     host.appendChild(el("p", {
       text: num(o.files) + " files · " + num(o.total_lines) + " lines · " +
         langText + " · analysed in " + o.duration_seconds + "s",

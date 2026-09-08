@@ -1,5 +1,11 @@
 # CodeCartographer
 
+[![CI](https://github.com/WajdAlfehaid/CodeCartographer/actions/workflows/ci.yml/badge.svg)](https://github.com/WajdAlfehaid/CodeCartographer/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/live%20demo-dashboard-2f6feb)](https://wajdalfehaid.github.io/CodeCartographer/)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Dependencies](https://img.shields.io/badge/runtime%20dependencies-none-2c7a4b)](#install)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
 Make an unfamiliar codebase legible before you change it.
 
 Point it at a directory. It parses the source, resolves each call to a real
@@ -12,6 +18,21 @@ TypeScript.
 python -m codecartographer analyze ./src --html report.html
 python -m codecartographer serve --root ~/projects
 ```
+
+## See it running
+
+**[Open the live dashboard →](https://wajdalfehaid.github.io/CodeCartographer/)**
+
+That page is this repository analysing itself, rebuilt by CI on every push:
+47 files across 8 languages — Python, JavaScript, Java, COBOL, Fortran,
+Visual Basic, Pascal and PL/SQL — with a real dependency map, a genuine
+circular dependency, and risk scores drawn from actual git history.
+
+Start on the **Map** tab, then open **Confidence** to see how much of the
+analysis was proven rather than inferred.
+
+There is also a [smaller Java-only report](https://wajdalfehaid.github.io/CodeCartographer/legacy-sample.html)
+if you want something easier to read end to end.
 
 ## The problem
 

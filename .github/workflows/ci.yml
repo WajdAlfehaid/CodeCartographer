@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # No install step, and none needed: the analysis engine is pure
+      # standard library. This job is the proof of that claim.
+      - name: Run the test suite
+        run: python tests/run_tests.py
+
+      - name: Analyse this repository as a smoke test
+        run: python -m codecartographer analyze . --quiet --json /tmp/analysis.json
+
+      - name: Check the analysis actually produced results
+        run: |
+          python - <<'PY'
+          import json
+          with open("/tmp/analysis.json") as handle:
+              data = json.load(handle)
+          overview = data["overview"]
+          resolution = data["resolution"]
+          print(f"{overview['files']} files, {overview['total_lines']} lines, "
+                f"{overview['language_count']} languages")
+          print(f"call resolution: {resolution['resolution_rate']:.0%} of "
+                f"{resolution['internal_call_sites']} internal call sites")
+          # A regression in the parsers or the resolver would show up here
+          # long before anyone noticed it in the dashboard.
+          assert overview["language_count"] >= 6, "expected a multi-language tree"
+          assert overview["functions"] > 200, "parsers found too few functions"
+          assert resolution["resolution_rate"] > 0.7, "call resolution regressed"
+          PY
+
+  pages:
+    name: Publish the live demo
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The risk model reads churn and authorship from git, so the demo
+          # needs real history rather than a shallow clone.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the reports
+        run: |
+          mkdir -p site
+          python -m codecartographer analyze . \
+            --html site/index.html --markdown site/REPORT.md
+          python -m codecartographer analyze sample_legacy_codebase \
+            --html site/legacy-sample.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
