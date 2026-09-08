@@ -1,0 +1,36 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PAYROLL.
+      * Legacy payroll calculator. Do not touch. -- J.M. 1994
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-EMPLOYEE.
+           05  WS-EMP-ID        PIC X(08).
+           05  WS-HOURS         PIC 9(03)V99.
+           05  WS-RATE          PIC 9(05)V99.
+       01  WS-GROSS-PAY         PIC 9(07)V99 VALUE ZERO.
+       01  WS-TAX-RATE          PIC V999 VALUE 0.225.
+       01  WS-OVERTIME-LIMIT    PIC 9(03) VALUE 40.
+       01  WS-UNUSED-COUNTER    PIC 9(04) VALUE ZERO.
+       PROCEDURE DIVISION.
+       MAIN-PARAGRAPH.
+           PERFORM INITIALIZE-RUN
+           PERFORM CALCULATE-GROSS
+           PERFORM APPLY-DEDUCTIONS
+           PERFORM WRITE-PAYSLIP
+           STOP RUN.
+       INITIALIZE-RUN.
+           MOVE ZERO TO WS-GROSS-PAY.
+       CALCULATE-GROSS.
+           IF WS-HOURS > WS-OVERTIME-LIMIT
+               COMPUTE WS-GROSS-PAY = (WS-OVERTIME-LIMIT * WS-RATE) +
+                   ((WS-HOURS - WS-OVERTIME-LIMIT) * WS-RATE * 1.5)
+           ELSE
+               COMPUTE WS-GROSS-PAY = WS-HOURS * WS-RATE
+           END-IF.
+       APPLY-DEDUCTIONS.
+           COMPUTE WS-GROSS-PAY = WS-GROSS-PAY * (1 - WS-TAX-RATE).
+       WRITE-PAYSLIP.
+           DISPLAY "GROSS PAY: " WS-GROSS-PAY.
+       OLD-BONUS-ROUTINE.
+           DISPLAY "THIS IS NEVER PERFORMED".
