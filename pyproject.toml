@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codecartographer"
+version = "2.0.0"
+description = "Map, measure and de-risk a legacy codebase across 17 languages."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["static-analysis", "legacy-code", "cobol", "dependency-graph",
+            "dead-code", "technical-debt"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Quality Assurance",
+]
+# The engine has no runtime dependencies. This is a feature, not an oversight.
+dependencies = []
+
+[project.optional-dependencies]
+web = ["flask>=2.0"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+codecartographer = "codecartographer.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["codecartographer*"]
+
+[tool.setuptools.package-data]
+codecartographer = ["web/templates/*.html", "web/static/*"]

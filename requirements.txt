@@ -1,0 +1,6 @@
+# The analysis engine, the CLI and the HTML report need nothing at all —
+# everything is standard library. That is deliberate: the machines these
+# codebases live on often cannot reach a package index.
+#
+# Flask is needed only for the interactive dashboard (`serve`).
+flask>=2.0 ; extra == "web"
