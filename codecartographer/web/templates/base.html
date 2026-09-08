@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}CodeCartographer{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="{{ url_for('index') }}" style="color:inherit">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="8" r="2.4"/>
+        <circle cx="12" cy="18" r="2.4"/>
+        <path d="M8 7l7.6 1M7.2 8.2L10.8 15.6M16.6 10.2L13.2 15.8"/>
+      </svg>
+      CodeCartographer
+      <span class="brand-sub">{% block subtitle %}legacy code, mapped{% endblock %}</span>
+    </a>
+    <div class="spacer"></div>
+    {% block actions %}{% endblock %}
+    <button class="btn" id="theme-toggle" title="Toggle light / dark">◐</button>
+  </div>
+</div>
+<div class="wrap">
+{% block content %}{% endblock %}
+<footer>
+  Every finding is derived from static analysis of the source alone —
+  nothing was executed. Where the analysis is uncertain it says so.
+</footer>
+</div>
+{% block scripts %}{% endblock %}
+<script>
+(function(){
+  var t=document.getElementById('theme-toggle');
+  try{var s=localStorage.getItem('cc-theme'); if(s) document.documentElement.setAttribute('data-theme',s);}catch(e){}
+  if(t) t.addEventListener('click',function(){
+    var r=document.documentElement;
+    var n=r.getAttribute('data-theme')==='dark'?'light':'dark';
+    r.setAttribute('data-theme',n);
+    try{localStorage.setItem('cc-theme',n);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

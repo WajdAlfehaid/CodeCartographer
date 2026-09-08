@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}CodeCartographer{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Understand a codebase before you change it</h1>
+  <p>Point this at a directory. It parses the source, resolves calls to real
+     definitions, maps how the files depend on each other, finds the code
+     nothing reaches, recovers the business rules buried in the logic, and
+     tells you where a change is most likely to hurt — across
+     {{ languages|length }} languages, from COBOL to TypeScript.</p>
+</div>
+
+<div class="card">
+  <h2>Analyse a directory</h2>
+  <p class="sub">Paths are relative to the workspace root
+     <code>{{ workspace }}</code>. Nothing outside it can be read.</p>
+
+  <div class="field">
+    <label for="path">Directory</label>
+    <input type="text" id="path" value="{{ suggestions[0] if suggestions else '.' }}"
+           placeholder="e.g. src/main/java" spellcheck="false">
+  </div>
+
+  {% if suggestions %}
+  <div class="pill-row">
+    {% for s in suggestions %}
+    <button class="pill" onclick="document.getElementById('path').value='{{ s }}'">{{ s }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="field">
+    <label for="exclude">Additionally exclude (comma-separated globs, optional)</label>
+    <input type="text" id="exclude" placeholder="**/generated/**, **/*.pb.go" spellcheck="false">
+  </div>
+
+  <button class="btn btn-primary" id="go">Analyse</button>
+  <span id="status" style="margin-left:12px;color:var(--text-dim);font-size:13.5px"></span>
+  <div class="progress" id="progress" style="display:none"><span style="width:12%"></span></div>
+  <div id="error" class="error" style="display:none"></div>
+</div>
+
+<div class="card">
+  <h2>Languages this build understands</h2>
+  <p class="sub">Each has its own parser for comments, string escaping and
+     block structure — including the column-sensitive formats that trip up
+     regex-based tools.</p>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Language</th><th>Era</th><th>Extensions</th></tr></thead>
+      <tbody>
+      {% for l in languages %}
+        <tr>
+          <td>{{ l.label }}</td>
+          <td><span class="badge neutral">{{ l.family }}</span></td>
+          <td class="path">{{ l.extensions|join(' ') }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('go').addEventListener('click', async function () {
+  var btn = this, status = document.getElementById('status');
+  var err = document.getElementById('error'), bar = document.getElementById('progress');
+  err.style.display = 'none';
+  btn.disabled = true;
+  bar.style.display = 'block';
+  status.innerHTML = '<span class="spinner"></span> Parsing and resolving…';
+  try {
+    var res = await fetch('analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        directory_path: document.getElementById('path').value,
+        exclude: document.getElementById('exclude').value
+      })
+    });
+    var data = await res.json();
+    if (data.success) {
+      status.textContent = 'Done — ' + data.overview.files + ' files.';
+      window.location.href = 'dashboard?run=' + encodeURIComponent(data.run);
+    } else {
+      err.textContent = data.error || 'Analysis failed.';
+      err.style.display = 'block';
+      status.textContent = '';
+    }
+  } catch (e) {
+    err.textContent = 'Request failed: ' + e.message;
+    err.style.display = 'block';
+    status.textContent = '';
+  } finally {
+    btn.disabled = false;
+    bar.style.display = 'none';
+  }
+});
+document.getElementById('path').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') document.getElementById('go').click();
+});
+</script>
+{% endblock %}

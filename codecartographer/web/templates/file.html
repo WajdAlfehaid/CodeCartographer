@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ file.name }} — CodeCartographer{% endblock %}
+{% block subtitle %}file detail{% endblock %}
+{% block actions %}
+<a class="btn" href="{{ url_for('dashboard') }}?run={{ run }}">← Dashboard</a>
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1 class="path" style="font-size:20px">{{ file.rel_path }}</h1>
+  <p>{{ file.language }} · {{ file.lines }} lines · {{ file.functions|length }}
+     functions · {{ file.types|length }} types
+     {%- if file.parse_confidence < 1.0 %} · parsed with reduced confidence
+     ({{ (file.parse_confidence * 100)|round|int }}%){% endif %}</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="k">Risk</div>
+    <div class="v" style="color:var(--{{ (risk.level or 'low')|lower }})">{{ risk.score or 0 }}</div>
+    <div class="n">{{ risk.level or 'unknown' }}</div></div>
+  <div class="stat"><div class="k">Maintainability</div>
+    <div class="v">{{ complexity.maintainability_index or 0 }}</div>
+    <div class="n">{{ complexity.rating or '—' }}</div></div>
+  <div class="stat"><div class="k">Cyclomatic</div>
+    <div class="v">{{ complexity.cyclomatic_total or 0 }}</div>
+    <div class="n">peak {{ complexity.cyclomatic_max or 0 }} in one function</div></div>
+  <div class="stat"><div class="k">Comments</div>
+    <div class="v">{{ ((complexity.comment_ratio or 0) * 100)|round|int }}%</div>
+    <div class="n">{{ complexity.comment_lines or 0 }} lines</div></div>
+  <div class="stat"><div class="k">Magic numbers</div>
+    <div class="v">{{ complexity.magic_numbers or 0 }}</div>
+    <div class="n">unnamed constants</div></div>
+</div>
+
+{% if risk.narrative %}
+<div class="card"><h2>Why this file is scored the way it is</h2>
+  <p class="sub">{{ risk.narrative }}</p>
+  {% for key, f in (risk.factors or {}).items() %}
+  <div class="factor">
+    <div class="factor-head"><b>{{ f.label }}{% if not f.measured %} (assumed){% endif %}</b>
+      <span>{{ f.normalised }} × {{ f.weight }} = {{ f.contribution }}</span></div>
+    <div class="meter"><span style="width:{{ f.normalised }}%;background:var(--{{ 'critical' if f.normalised >= 75 else 'high' if f.normalised >= 55 else 'moderate' if f.normalised >= 35 else 'low' }})"></span></div>
+    <div class="factor-detail">{{ f.detail }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if smells %}
+<div class="card"><h2>Problems in this file</h2>
+  {% for s in smells %}
+  <div class="finding {{ s.severity }}">
+    <h4>{{ s.title }}<span class="badge {{ s.severity }}">{{ s.severity }}</span>
+      <span class="where">line {{ s.line }}</span></h4>
+    <p>{{ s.detail }}</p><p class="action">{{ s.action }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if rules %}
+<div class="card"><h2>Business rules in this file</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th class="num">Line</th><th>Rule</th><th>Code</th></tr></thead>
+    <tbody>{% for r in rules %}
+      <tr><td class="num">{{ r.line }}</td><td>{{ r.explanation }}</td>
+          <td class="path">{{ r.code }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+
+<div class="card"><h2>Functions</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Name</th><th class="num">Lines</th><th class="num">Cyclomatic</th>
+      <th class="num">Cognitive</th><th class="num">Nesting</th><th>Purpose</th>
+      <th>Visibility</th></tr></thead>
+    <tbody>
+    {% set cmap = {} %}{% for c in classifications %}{% set _ = cmap.update({c.key: c}) %}{% endfor %}
+    {% for fn in file.functions %}
+      <tr>
+        <td class="path"><a href="#L{{ fn.line }}">{{ fn.qualified_name }}</a></td>
+        <td class="num">{{ fn.loc }}</td>
+        <td class="num">{{ fn.metrics.cyclomatic or 0 }}</td>
+        <td class="num">{{ fn.metrics.cognitive or 0 }}</td>
+        <td class="num">{{ fn.metrics.max_nesting or 0 }}</td>
+        <td>{% set c = cmap.get(fn.key) %}{% if c %}{{ c.label }}
+            <span class="badge neutral">{{ (c.confidence * 100)|round|int }}%</span>{% else %}—{% endif %}</td>
+        <td><span class="badge neutral">{{ 'public' if fn.is_public else 'internal' }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="card"><h2>Source</h2>
+  <div class="source"><table><tbody>
+  {% set hits = [] %}{% for s in smells %}{% set _ = hits.append(s.line) %}{% endfor %}
+  {% for line in file.source.split('\n') %}
+    {% set n = loop.index %}
+    <tr id="L{{ n }}" class="{{ 'hit' if n in hits else '' }}">
+      <td class="ln">{{ n }}</td><td><pre>{{ line }}</pre></td>
+    </tr>
+  {% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}
